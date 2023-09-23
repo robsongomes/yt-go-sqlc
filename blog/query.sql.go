@@ -7,7 +7,61 @@ package blog
 
 import (
 	"context"
+	"database/sql"
 )
+
+const createPost = `-- name: CreatePost :exec
+INSERT INTO posts (title, content, slug, author)
+VALUES ($1, $2, $3, $4)
+`
+
+type CreatePostParams struct {
+	Title   string
+	Content string
+	Slug    string
+	Author  sql.NullString
+}
+
+func (q *Queries) CreatePost(ctx context.Context, arg CreatePostParams) error {
+	_, err := q.db.ExecContext(ctx, createPost,
+		arg.Title,
+		arg.Content,
+		arg.Slug,
+		arg.Author,
+	)
+	return err
+}
+
+const createPostAndReturnPost = `-- name: CreatePostAndReturnPost :one
+INSERT INTO posts (title, content, slug, author)
+VALUES ($1, $2, $3, $4)
+RETURNING id, title, content, slug, author
+`
+
+type CreatePostAndReturnPostParams struct {
+	Title   string
+	Content string
+	Slug    string
+	Author  sql.NullString
+}
+
+func (q *Queries) CreatePostAndReturnPost(ctx context.Context, arg CreatePostAndReturnPostParams) (Post, error) {
+	row := q.db.QueryRowContext(ctx, createPostAndReturnPost,
+		arg.Title,
+		arg.Content,
+		arg.Slug,
+		arg.Author,
+	)
+	var i Post
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.Content,
+		&i.Slug,
+		&i.Author,
+	)
+	return i, err
+}
 
 const listPosts = `-- name: ListPosts :many
 SELECT id, title, content, slug, author FROM posts

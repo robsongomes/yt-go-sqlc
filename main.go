@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"log/slog"
 
 	_ "github.com/lib/pq"
@@ -27,13 +28,21 @@ func main() {
 
 	queries := blog.New(db)
 
-	posts, err := queries.ListPosts(ctx)
-	if err != nil {
-		slog.Error(err.Error())
-		panic(err)
+	params := blog.CreatePostAndReturnPostParams{
+		Title:   "Como inserir com sqlc 4",
+		Content: "Você pode usar o sql para inserir dados no banco",
+		Slug:    "como_inserir_com_sqlc_4",
+		Author:  sql.NullString{String: "robson", Valid: false},
 	}
 
-	for _, post := range posts {
-		slog.Info(post.Title)
+	// err = queries.CreatePost(ctx, params)
+	// if err != nil {
+	// 	panic(err)
+	// }
+
+	post, err := queries.CreatePostAndReturnPost(ctx, params)
+	if err != nil {
+		panic(err)
 	}
+	fmt.Printf("Post salvo: %v\n", post)
 }
