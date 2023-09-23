@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"log/slog"
 
 	_ "github.com/lib/pq"
@@ -28,21 +27,25 @@ func main() {
 
 	queries := blog.New(db)
 
-	params := blog.CreatePostAndReturnPostParams{
-		Title:   "Como inserir com sqlc 4",
-		Content: "Você pode usar o sql para inserir dados no banco",
-		Slug:    "como_inserir_com_sqlc_4",
-		Author:  sql.NullString{String: "robson", Valid: false},
-	}
+	// err = queries.UpdatePostAuthor(ctx, sql.NullString{String: "miguel", Valid: true})
+	// trataErro(err)
+	// slog.Info("Registros atualizados")
 
-	// err = queries.CreatePost(ctx, params)
-	// if err != nil {
-	// 	panic(err)
-	// }
+	// err = queries.UpdatePostAuthorById(ctx, blog.UpdatePostAuthorByIdParams{
+	// 	ID:     1,
+	// 	Author: sql.NullString{String: "robson", Valid: true},
+	// })
+	// trataErro(err)
+	// slog.Info("Registro atualizado")
 
-	post, err := queries.CreatePostAndReturnPost(ctx, params)
+	err = queries.DeletePostById(ctx, 16)
+	trataErro(err)
+	slog.Info("Registro deletado com sucesso")
+}
+
+func trataErro(err error) {
 	if err != nil {
+		slog.Error(err.Error())
 		panic(err)
 	}
-	fmt.Printf("Post salvo: %v\n", post)
 }

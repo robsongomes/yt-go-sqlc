@@ -10,3 +10,12 @@ VALUES ($1, $2, $3, $4);
 INSERT INTO posts (title, content, slug, author)
 VALUES ($1, $2, $3, $4)
 RETURNING *;
+
+-- name: UpdatePostAuthor :exec
+UPDATE posts SET author = $1; --WARNING: NO WHERE
+
+-- name: UpdatePostAuthorById :exec
+UPDATE posts SET author = $1 WHERE id = $2;
+
+-- name: DeletePostById :exec
+DELETE FROM posts WHERE id = $1;

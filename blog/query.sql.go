@@ -63,6 +63,15 @@ func (q *Queries) CreatePostAndReturnPost(ctx context.Context, arg CreatePostAnd
 	return i, err
 }
 
+const deletePostById = `-- name: DeletePostById :exec
+DELETE FROM posts WHERE id = $1
+`
+
+func (q *Queries) DeletePostById(ctx context.Context, id int64) error {
+	_, err := q.db.ExecContext(ctx, deletePostById, id)
+	return err
+}
+
 const listPosts = `-- name: ListPosts :many
 SELECT id, title, content, slug, author FROM posts
 ORDER BY title DESC
@@ -95,4 +104,29 @@ func (q *Queries) ListPosts(ctx context.Context) ([]Post, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const updatePostAuthor = `-- name: UpdatePostAuthor :exec
+UPDATE posts SET author = $1
+`
+
+func (q *Queries) UpdatePostAuthor(ctx context.Context, author sql.NullString) error {
+	_, err := q.db.ExecContext(ctx, updatePostAuthor, author)
+	return err
+}
+
+const updatePostAuthorById = `-- name: UpdatePostAuthorById :exec
+
+UPDATE posts SET author = $1 WHERE id = $2
+`
+
+type UpdatePostAuthorByIdParams struct {
+	Author sql.NullString
+	ID     int64
+}
+
+// WARNING: NO WHERE
+func (q *Queries) UpdatePostAuthorById(ctx context.Context, arg UpdatePostAuthorByIdParams) error {
+	_, err := q.db.ExecContext(ctx, updatePostAuthorById, arg.Author, arg.ID)
+	return err
 }
