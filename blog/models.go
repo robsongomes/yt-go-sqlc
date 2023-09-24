@@ -15,3 +15,8 @@ type Post struct {
 	Slug    string
 	Author  sql.NullString
 }
+
+type PostsView struct {
+	PostID int64
+	Views  int32
+}

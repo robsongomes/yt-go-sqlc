@@ -28,27 +28,36 @@ func main() {
 
 	queries := blog.New(db)
 
-	// posts, err := queries.GetPostsByIds(ctx, []int32{1, 2, 14})
-	// trataErro(err)
-	// for _, post := range posts {
-	// 	fmt.Println(post)
-	// }
-
-	// total, err := queries.CountPosts(ctx)
-	// trataErro(err)
-	// fmt.Printf("Existem %d posts no banco\n", total)
-
-	report, err := queries.CountPostsByAuthor(ctx)
+	//iniciar uma transação
+	tx, err := db.BeginTx(ctx, nil)
 	trataErro(err)
-	for _, r := range report {
-		fmt.Printf("%s possui %d posts\n", r.Author.String, r.Count)
+
+	qtx := queries.WithTx(tx)
+
+	defer tx.Commit()
+
+	post, err := qtx.GetPostById(ctx, 1)
+	// tx.Rollback()
+	if err != nil {
+		fmt.Println(err)
+		tx.Rollback()
 	}
 
+	err = qtx.SetPostViews(ctx, post.ID)
+	if err != nil {
+		fmt.Println(err)
+		tx.Rollback()
+	}
+
+	// err = tx.Commit()
+	if err != nil {
+		fmt.Println(err)
+	}
 }
 
 func trataErro(err error) {
 	if err != nil {
 		slog.Error(err.Error())
-		panic(err)
+		// panic(err)
 	}
 }

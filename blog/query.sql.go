@@ -291,6 +291,17 @@ func (q *Queries) ListPosts(ctx context.Context) ([]Post, error) {
 	return items, nil
 }
 
+const setPostViews = `-- name: SetPostViews :exec
+UPDATE posts_views set views = views + 1 WHERE post_id = $1
+`
+
+// INSERT INTO posts_views (post_id, views) VALUES ($1, 1)
+// ON CONFLICT(post_id) DO UPDATE SET views = EXCLUDED.views + 1;
+func (q *Queries) SetPostViews(ctx context.Context, postID int64) error {
+	_, err := q.db.ExecContext(ctx, setPostViews, postID)
+	return err
+}
+
 const updatePostAuthor = `-- name: UpdatePostAuthor :exec
 UPDATE posts SET author = $1
 `

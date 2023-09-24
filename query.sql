@@ -44,3 +44,8 @@ SELECT count(*) FROM posts;
 SELECT count(*), author from posts
 WHERE author is not null
 GROUP BY author;
+
+-- name: SetPostViews :exec
+-- INSERT INTO posts_views (post_id, views) VALUES ($1, 1)
+-- ON CONFLICT(post_id) DO UPDATE SET views = EXCLUDED.views + 1;
+UPDATE posts_views set views = views + 1 WHERE post_id = $1;
