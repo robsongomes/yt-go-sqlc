@@ -19,3 +19,28 @@ UPDATE posts SET author = $1 WHERE id = $2;
 
 -- name: DeletePostById :exec
 DELETE FROM posts WHERE id = $1;
+
+-- name: GetPostById :one
+SELECT * FROM posts
+WHERE id = $1;
+
+-- name: GetPostsTitle :many
+SELECT title FROM posts;
+
+-- name: GetPostsAuthors :many
+SELECT author FROM posts;
+
+-- name: GetPostsInfo :many
+SELECT title, author FROM posts;
+
+-- name: GetPostsByIds :many
+SELECT * FROM posts
+WHERE id = ANY($1::int[]);
+
+-- name: CountPosts :one
+SELECT count(*) FROM posts;
+
+-- name: CountPostsByAuthor :many
+SELECT count(*), author from posts
+WHERE author is not null
+GROUP BY author;

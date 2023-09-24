@@ -8,7 +8,54 @@ package blog
 import (
 	"context"
 	"database/sql"
+
+	"github.com/lib/pq"
 )
+
+const countPosts = `-- name: CountPosts :one
+SELECT count(*) FROM posts
+`
+
+func (q *Queries) CountPosts(ctx context.Context) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countPosts)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const countPostsByAuthor = `-- name: CountPostsByAuthor :many
+SELECT count(*), author from posts
+WHERE author is not null
+GROUP BY author
+`
+
+type CountPostsByAuthorRow struct {
+	Count  int64
+	Author sql.NullString
+}
+
+func (q *Queries) CountPostsByAuthor(ctx context.Context) ([]CountPostsByAuthorRow, error) {
+	rows, err := q.db.QueryContext(ctx, countPostsByAuthor)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []CountPostsByAuthorRow
+	for rows.Next() {
+		var i CountPostsByAuthorRow
+		if err := rows.Scan(&i.Count, &i.Author); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
 
 const createPost = `-- name: CreatePost :exec
 INSERT INTO posts (title, content, slug, author)
@@ -70,6 +117,144 @@ DELETE FROM posts WHERE id = $1
 func (q *Queries) DeletePostById(ctx context.Context, id int64) error {
 	_, err := q.db.ExecContext(ctx, deletePostById, id)
 	return err
+}
+
+const getPostById = `-- name: GetPostById :one
+SELECT id, title, content, slug, author FROM posts
+WHERE id = $1
+`
+
+func (q *Queries) GetPostById(ctx context.Context, id int64) (Post, error) {
+	row := q.db.QueryRowContext(ctx, getPostById, id)
+	var i Post
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.Content,
+		&i.Slug,
+		&i.Author,
+	)
+	return i, err
+}
+
+const getPostsAuthors = `-- name: GetPostsAuthors :many
+SELECT author FROM posts
+`
+
+func (q *Queries) GetPostsAuthors(ctx context.Context) ([]sql.NullString, error) {
+	rows, err := q.db.QueryContext(ctx, getPostsAuthors)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []sql.NullString
+	for rows.Next() {
+		var author sql.NullString
+		if err := rows.Scan(&author); err != nil {
+			return nil, err
+		}
+		items = append(items, author)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getPostsByIds = `-- name: GetPostsByIds :many
+SELECT id, title, content, slug, author FROM posts
+WHERE id = ANY($1::int[])
+`
+
+func (q *Queries) GetPostsByIds(ctx context.Context, dollar_1 []int32) ([]Post, error) {
+	rows, err := q.db.QueryContext(ctx, getPostsByIds, pq.Array(dollar_1))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Post
+	for rows.Next() {
+		var i Post
+		if err := rows.Scan(
+			&i.ID,
+			&i.Title,
+			&i.Content,
+			&i.Slug,
+			&i.Author,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getPostsInfo = `-- name: GetPostsInfo :many
+SELECT title, author FROM posts
+`
+
+type GetPostsInfoRow struct {
+	Title  string
+	Author sql.NullString
+}
+
+func (q *Queries) GetPostsInfo(ctx context.Context) ([]GetPostsInfoRow, error) {
+	rows, err := q.db.QueryContext(ctx, getPostsInfo)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetPostsInfoRow
+	for rows.Next() {
+		var i GetPostsInfoRow
+		if err := rows.Scan(&i.Title, &i.Author); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getPostsTitle = `-- name: GetPostsTitle :many
+SELECT title FROM posts
+`
+
+func (q *Queries) GetPostsTitle(ctx context.Context) ([]string, error) {
+	rows, err := q.db.QueryContext(ctx, getPostsTitle)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var title string
+		if err := rows.Scan(&title); err != nil {
+			return nil, err
+		}
+		items = append(items, title)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listPosts = `-- name: ListPosts :many

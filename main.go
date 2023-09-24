@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"log/slog"
 
 	_ "github.com/lib/pq"
@@ -27,20 +28,22 @@ func main() {
 
 	queries := blog.New(db)
 
-	// err = queries.UpdatePostAuthor(ctx, sql.NullString{String: "miguel", Valid: true})
+	// posts, err := queries.GetPostsByIds(ctx, []int32{1, 2, 14})
 	// trataErro(err)
-	// slog.Info("Registros atualizados")
+	// for _, post := range posts {
+	// 	fmt.Println(post)
+	// }
 
-	// err = queries.UpdatePostAuthorById(ctx, blog.UpdatePostAuthorByIdParams{
-	// 	ID:     1,
-	// 	Author: sql.NullString{String: "robson", Valid: true},
-	// })
+	// total, err := queries.CountPosts(ctx)
 	// trataErro(err)
-	// slog.Info("Registro atualizado")
+	// fmt.Printf("Existem %d posts no banco\n", total)
 
-	err = queries.DeletePostById(ctx, 16)
+	report, err := queries.CountPostsByAuthor(ctx)
 	trataErro(err)
-	slog.Info("Registro deletado com sucesso")
+	for _, r := range report {
+		fmt.Printf("%s possui %d posts\n", r.Author.String, r.Count)
+	}
+
 }
 
 func trataErro(err error) {
