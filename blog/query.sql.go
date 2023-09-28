@@ -257,6 +257,47 @@ func (q *Queries) GetPostsTitle(ctx context.Context) ([]string, error) {
 	return items, nil
 }
 
+const getPostsViews = `-- name: GetPostsViews :many
+SELECT posts.id, posts.title, posts.content, posts.slug, posts.author, posts_views.post_id, posts_views.views FROM posts
+JOIN posts_views ON posts_views.post_id = posts.id
+`
+
+type GetPostsViewsRow struct {
+	Post      Post
+	PostsView PostsView
+}
+
+func (q *Queries) GetPostsViews(ctx context.Context) ([]GetPostsViewsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getPostsViews)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetPostsViewsRow
+	for rows.Next() {
+		var i GetPostsViewsRow
+		if err := rows.Scan(
+			&i.Post.ID,
+			&i.Post.Title,
+			&i.Post.Content,
+			&i.Post.Slug,
+			&i.Post.Author,
+			&i.PostsView.PostID,
+			&i.PostsView.Views,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listPosts = `-- name: ListPosts :many
 SELECT id, title, content, slug, author FROM posts
 ORDER BY title DESC

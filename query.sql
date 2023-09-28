@@ -49,3 +49,7 @@ GROUP BY author;
 -- INSERT INTO posts_views (post_id, views) VALUES ($1, 1)
 -- ON CONFLICT(post_id) DO UPDATE SET views = EXCLUDED.views + 1;
 UPDATE posts_views set views = views + 1 WHERE post_id = $1;
+
+-- name: GetPostsViews :many
+SELECT sqlc.embed(posts), sqlc.embed(posts_views) FROM posts
+JOIN posts_views ON posts_views.post_id = posts.id;

@@ -28,36 +28,18 @@ func main() {
 
 	queries := blog.New(db)
 
-	//iniciar uma transação
-	tx, err := db.BeginTx(ctx, nil)
+	report, err := queries.GetPostsViews(ctx)
 	trataErro(err)
 
-	qtx := queries.WithTx(tx)
-
-	defer tx.Commit()
-
-	post, err := qtx.GetPostById(ctx, 1)
-	// tx.Rollback()
-	if err != nil {
-		fmt.Println(err)
-		tx.Rollback()
-	}
-
-	err = qtx.SetPostViews(ctx, post.ID)
-	if err != nil {
-		fmt.Println(err)
-		tx.Rollback()
-	}
-
-	// err = tx.Commit()
-	if err != nil {
-		fmt.Println(err)
+	fmt.Println("views --> post")
+	for _, r := range report {
+		fmt.Printf("%d --> %s\n", r.PostsView.Views, r.Post.Title)
 	}
 }
 
 func trataErro(err error) {
 	if err != nil {
 		slog.Error(err.Error())
-		// panic(err)
+		panic(err)
 	}
 }
