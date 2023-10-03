@@ -1,4 +1,8 @@
 version: "2"
+overrides:
+  go:
+    rename:
+      content: "Conteudo"
 sql:
   - engine: "postgresql"
     queries: "query.sql"
@@ -7,3 +11,8 @@ sql:
       go:
         package: "blog"
         out: "blog"
+        overrides:
+          - db_type: "text"
+            go_type: "github.com/robsongomes/yt-go-sqlc/types.MyString"
+        emit_json_tags: true
+        emit_db_tags: true

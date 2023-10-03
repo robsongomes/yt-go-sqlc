@@ -35,7 +35,7 @@ SELECT title, author FROM posts;
 
 -- name: GetPostsByIds :many
 SELECT * FROM posts
-WHERE id = ANY($1::int[]);
+WHERE id = ANY(@post_ids::int[]);
 
 -- name: CountPosts :one
 SELECT count(*) FROM posts;
@@ -53,3 +53,11 @@ UPDATE posts_views set views = views + 1 WHERE post_id = $1;
 -- name: GetPostsViews :many
 SELECT sqlc.embed(posts), sqlc.embed(posts_views) FROM posts
 JOIN posts_views ON posts_views.post_id = posts.id;
+
+-- name: UpdateContentOrAuthor :one
+UPDATE posts
+SET
+   content = coalesce(sqlc.narg('content'), content),
+   author  = coalesce(sqlc.narg('author'), author)
+WHERE id = @id
+RETURNING *;

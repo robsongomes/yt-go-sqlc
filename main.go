@@ -27,14 +27,13 @@ func main() {
 	slog.Info("Conectou com o banco")
 
 	queries := blog.New(db)
-
-	report, err := queries.GetPostsViews(ctx)
+	post, err := queries.UpdateContentOrAuthor(ctx, blog.UpdateContentOrAuthorParams{
+		//Content: sql.NullString{String: "Conteúdo alterado", Valid: true},
+		Author: sql.NullString{String: "robson", Valid: true},
+		ID:     2,
+	})
 	trataErro(err)
-
-	fmt.Println("views --> post")
-	for _, r := range report {
-		fmt.Printf("%d --> %s\n", r.PostsView.Views, r.Post.Title)
-	}
+	fmt.Println(post)
 }
 
 func trataErro(err error) {

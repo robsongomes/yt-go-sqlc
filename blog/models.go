@@ -6,17 +6,19 @@ package blog
 
 import (
 	"database/sql"
+
+	"github.com/robsongomes/yt-go-sqlc/types"
 )
 
 type Post struct {
-	ID      int64
-	Title   string
-	Content string
-	Slug    string
-	Author  sql.NullString
+	ID       int64          `db:"id" json:"id"`
+	Title    types.MyString `db:"title" json:"title"`
+	Conteudo types.MyString `db:"content" json:"content"`
+	Slug     types.MyString `db:"slug" json:"slug"`
+	Author   sql.NullString `db:"author" json:"author"`
 }
 
 type PostsView struct {
-	PostID int64
-	Views  int32
+	PostID int64 `db:"post_id" json:"post_id"`
+	Views  int32 `db:"views" json:"views"`
 }

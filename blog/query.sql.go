@@ -10,6 +10,7 @@ import (
 	"database/sql"
 
 	"github.com/lib/pq"
+	"github.com/robsongomes/yt-go-sqlc/types"
 )
 
 const countPosts = `-- name: CountPosts :one
@@ -30,8 +31,8 @@ GROUP BY author
 `
 
 type CountPostsByAuthorRow struct {
-	Count  int64
-	Author sql.NullString
+	Count  int64          `db:"count" json:"count"`
+	Author sql.NullString `db:"author" json:"author"`
 }
 
 func (q *Queries) CountPostsByAuthor(ctx context.Context) ([]CountPostsByAuthorRow, error) {
@@ -63,16 +64,16 @@ VALUES ($1, $2, $3, $4)
 `
 
 type CreatePostParams struct {
-	Title   string
-	Content string
-	Slug    string
-	Author  sql.NullString
+	Title    types.MyString `db:"title" json:"title"`
+	Conteudo types.MyString `db:"content" json:"content"`
+	Slug     types.MyString `db:"slug" json:"slug"`
+	Author   sql.NullString `db:"author" json:"author"`
 }
 
 func (q *Queries) CreatePost(ctx context.Context, arg CreatePostParams) error {
 	_, err := q.db.ExecContext(ctx, createPost,
 		arg.Title,
-		arg.Content,
+		arg.Conteudo,
 		arg.Slug,
 		arg.Author,
 	)
@@ -86,16 +87,16 @@ RETURNING id, title, content, slug, author
 `
 
 type CreatePostAndReturnPostParams struct {
-	Title   string
-	Content string
-	Slug    string
-	Author  sql.NullString
+	Title    types.MyString `db:"title" json:"title"`
+	Conteudo types.MyString `db:"content" json:"content"`
+	Slug     types.MyString `db:"slug" json:"slug"`
+	Author   sql.NullString `db:"author" json:"author"`
 }
 
 func (q *Queries) CreatePostAndReturnPost(ctx context.Context, arg CreatePostAndReturnPostParams) (Post, error) {
 	row := q.db.QueryRowContext(ctx, createPostAndReturnPost,
 		arg.Title,
-		arg.Content,
+		arg.Conteudo,
 		arg.Slug,
 		arg.Author,
 	)
@@ -103,7 +104,7 @@ func (q *Queries) CreatePostAndReturnPost(ctx context.Context, arg CreatePostAnd
 	err := row.Scan(
 		&i.ID,
 		&i.Title,
-		&i.Content,
+		&i.Conteudo,
 		&i.Slug,
 		&i.Author,
 	)
@@ -130,7 +131,7 @@ func (q *Queries) GetPostById(ctx context.Context, id int64) (Post, error) {
 	err := row.Scan(
 		&i.ID,
 		&i.Title,
-		&i.Content,
+		&i.Conteudo,
 		&i.Slug,
 		&i.Author,
 	)
@@ -169,8 +170,8 @@ SELECT id, title, content, slug, author FROM posts
 WHERE id = ANY($1::int[])
 `
 
-func (q *Queries) GetPostsByIds(ctx context.Context, dollar_1 []int32) ([]Post, error) {
-	rows, err := q.db.QueryContext(ctx, getPostsByIds, pq.Array(dollar_1))
+func (q *Queries) GetPostsByIds(ctx context.Context, postIds []int32) ([]Post, error) {
+	rows, err := q.db.QueryContext(ctx, getPostsByIds, pq.Array(postIds))
 	if err != nil {
 		return nil, err
 	}
@@ -181,7 +182,7 @@ func (q *Queries) GetPostsByIds(ctx context.Context, dollar_1 []int32) ([]Post, 
 		if err := rows.Scan(
 			&i.ID,
 			&i.Title,
-			&i.Content,
+			&i.Conteudo,
 			&i.Slug,
 			&i.Author,
 		); err != nil {
@@ -203,8 +204,8 @@ SELECT title, author FROM posts
 `
 
 type GetPostsInfoRow struct {
-	Title  string
-	Author sql.NullString
+	Title  types.MyString `db:"title" json:"title"`
+	Author sql.NullString `db:"author" json:"author"`
 }
 
 func (q *Queries) GetPostsInfo(ctx context.Context) ([]GetPostsInfoRow, error) {
@@ -234,15 +235,15 @@ const getPostsTitle = `-- name: GetPostsTitle :many
 SELECT title FROM posts
 `
 
-func (q *Queries) GetPostsTitle(ctx context.Context) ([]string, error) {
+func (q *Queries) GetPostsTitle(ctx context.Context) ([]types.MyString, error) {
 	rows, err := q.db.QueryContext(ctx, getPostsTitle)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []string
+	var items []types.MyString
 	for rows.Next() {
-		var title string
+		var title types.MyString
 		if err := rows.Scan(&title); err != nil {
 			return nil, err
 		}
@@ -263,8 +264,8 @@ JOIN posts_views ON posts_views.post_id = posts.id
 `
 
 type GetPostsViewsRow struct {
-	Post      Post
-	PostsView PostsView
+	Post      Post      `db:"post" json:"post"`
+	PostsView PostsView `db:"posts_view" json:"posts_view"`
 }
 
 func (q *Queries) GetPostsViews(ctx context.Context) ([]GetPostsViewsRow, error) {
@@ -279,7 +280,7 @@ func (q *Queries) GetPostsViews(ctx context.Context) ([]GetPostsViewsRow, error)
 		if err := rows.Scan(
 			&i.Post.ID,
 			&i.Post.Title,
-			&i.Post.Content,
+			&i.Post.Conteudo,
 			&i.Post.Slug,
 			&i.Post.Author,
 			&i.PostsView.PostID,
@@ -315,7 +316,7 @@ func (q *Queries) ListPosts(ctx context.Context) ([]Post, error) {
 		if err := rows.Scan(
 			&i.ID,
 			&i.Title,
-			&i.Content,
+			&i.Conteudo,
 			&i.Slug,
 			&i.Author,
 		); err != nil {
@@ -343,6 +344,34 @@ func (q *Queries) SetPostViews(ctx context.Context, postID int64) error {
 	return err
 }
 
+const updateContentOrAuthor = `-- name: UpdateContentOrAuthor :one
+UPDATE posts
+SET
+   content = coalesce($1, content),
+   author  = coalesce($2, author)
+WHERE id = $3
+RETURNING id, title, content, slug, author
+`
+
+type UpdateContentOrAuthorParams struct {
+	Conteudo sql.NullString `db:"content" json:"content"`
+	Author   sql.NullString `db:"author" json:"author"`
+	ID       int64          `db:"id" json:"id"`
+}
+
+func (q *Queries) UpdateContentOrAuthor(ctx context.Context, arg UpdateContentOrAuthorParams) (Post, error) {
+	row := q.db.QueryRowContext(ctx, updateContentOrAuthor, arg.Conteudo, arg.Author, arg.ID)
+	var i Post
+	err := row.Scan(
+		&i.ID,
+		&i.Title,
+		&i.Conteudo,
+		&i.Slug,
+		&i.Author,
+	)
+	return i, err
+}
+
 const updatePostAuthor = `-- name: UpdatePostAuthor :exec
 UPDATE posts SET author = $1
 `
@@ -358,8 +387,8 @@ UPDATE posts SET author = $1 WHERE id = $2
 `
 
 type UpdatePostAuthorByIdParams struct {
-	Author sql.NullString
-	ID     int64
+	Author sql.NullString `db:"author" json:"author"`
+	ID     int64          `db:"id" json:"id"`
 }
 
 // WARNING: NO WHERE
